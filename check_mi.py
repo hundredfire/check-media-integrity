@@ -391,7 +391,7 @@ def main():
     setup(CONFIG)
     check_path = CONFIG.checkpath
     if CONFIG.excluded_folders:
-        CONFIG.excluded_folders = [os.path.normpath(f) for f in CONFIG.excluded_folders]
+        CONFIG.excluded_folders = [f.replace('\\', os.sep).replace('/', os.sep) for f in CONFIG.excluded_folders]
 
     print("Files integrity check for:", check_path)
 
