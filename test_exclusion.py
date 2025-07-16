@@ -104,5 +104,16 @@ class TestFolderExclusion(unittest.TestCase):
         main()
         self.assertIn('Number of bad/processed files: 0 / 5', mock_stdout.getvalue())
 
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_exclude_with_hash_in_command_line(self, mock_stdout):
+        folder_with_hash = os.path.join(self.test_dir, '#snapshots')
+        os.makedirs(folder_with_hash, exist_ok=True)
+        with open(os.path.join(folder_with_hash, 'file6.txt'), 'w') as f:
+            f.write('file6')
+
+        sys.argv = ['check_mi.py', self.test_dir, '-r', '-xf', folder_with_hash]
+        main()
+        self.assertIn('Number of bad/processed files: 0 / 5', mock_stdout.getvalue())
+
 if __name__ == '__main__':
     unittest.main()

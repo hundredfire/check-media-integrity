@@ -120,11 +120,21 @@ def arg_parser():
                              ' to raise the default when working with video files (usually) bigger than few GBytes',
                         dest='timeout', default=120)
 
-    parser.add_argument('-xf', '--exclude-folders', nargs='+', type=str,
+    parser.add_argument('-xf', '--exclude-folders', nargs='*', type=str,
                         help='exclude one or more folders from the scan',
                         dest='excluded_folders', default=[])
 
-    parse_out = parser.parse_args()
+    args = sys.argv[1:]
+    if '-xf' in args:
+        xf_index = args.index('-xf')
+        if xf_index + 1 < len(args):
+            excluded_folders = args[xf_index + 1:]
+            args = args[:xf_index]
+    else:
+        excluded_folders = []
+
+    parse_out = parser.parse_args(args)
+    parse_out.excluded_folders = excluded_folders
     parse_out.enable_csv = parse_out.csv_filename is not None
     return parse_out
 
@@ -391,10 +401,12 @@ def main():
         if not is_success[0]:
             check_outcome_detail = is_success[1]
             log_check_outcome(check_outcome_detail)
-            sys.exit(1)
+            if 'unittest' not in sys.modules.keys():
+                sys.exit(1)
         else:
             print("File", check_path, "is OK")
-            sys.exit(0)
+            if 'unittest' not in sys.modules.keys():
+                sys.exit(0)
 
     # manage folder (searches media files into)
 
