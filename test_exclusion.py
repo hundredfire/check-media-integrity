@@ -128,6 +128,15 @@ class TestFolderExclusion(unittest.TestCase):
         self.assertIn('Number of bad/processed files: 0 / 4', mock_stdout.getvalue())
 
     @patch('sys.stdout', new_callable=StringIO)
+    def test_exclude_recursive_subfolder(self, mock_stdout):
+        excluded_folder = os.path.join(self.test_dir, 'folder1')
+        subfolder_to_exclude = os.path.join(excluded_folder, 'subfolder1')
+
+        sys.argv = ['check_mi.py', self.test_dir, '-r', '-xf', excluded_folder]
+        main()
+        self.assertNotIn(subfolder_to_exclude, mock_stdout.getvalue())
+
+    @patch('sys.stdout', new_callable=StringIO)
     def test_exclude_subfolder_with_hash(self, mock_stdout):
         folder_with_hash = os.path.join(self.test_dir, 'folder1', '#snapshots')
         os.makedirs(folder_with_hash, exist_ok=True)

@@ -424,7 +424,7 @@ def main():
     for root, sub_dirs, files in os.walk(check_path):
         if CONFIG.excluded_folders:
             # remove the excluded folders from the sub_dirs
-            sub_dirs[:] = [d for d in sub_dirs if os.path.abspath(os.path.join(root, d)) not in CONFIG.excluded_folders]
+            sub_dirs[:] = [d for d in sub_dirs if not any(os.path.commonpath([os.path.abspath(os.path.join(root, d)), excluded]) == excluded for excluded in CONFIG.excluded_folders)]
 
         media_files = []
         for filename in files:
