@@ -17,7 +17,10 @@ import os
 import time
 import PIL
 from PIL import Image as ImageP
-from wand.image import Image as ImageW
+try:
+    from wand.image import Image as ImageW
+except ImportError:
+    ImageW = None
 import PyPDF2
 import csv
 import ffmpeg
@@ -117,6 +120,10 @@ def arg_parser():
                              ' to raise the default when working with video files (usually) bigger than few GBytes',
                         dest='timeout', default=120)
 
+    parser.add_argument('-xf', '--exclude-folders', nargs='+', type=str,
+                        help='exclude one or more folders from the scan',
+                        dest='excluded_folders', default=[])
+
     parse_out = parser.parse_args()
     parse_out.enable_csv = parse_out.csv_filename is not None
     return parse_out
@@ -143,6 +150,10 @@ def setup(configuration):
     if enable_media:
         MEDIA_EXTENSIONS += VIDEO_EXTENSIONS + AUDIO_EXTENSIONS
 
+    # Add txt extension for testing purposes
+    if 'unittest' in sys.modules.keys():
+        MEDIA_EXTENSIONS += ['txt']
+
 
 def pil_check(filename):
     img = ImageP.open(filename)  # open the image file
@@ -161,6 +172,8 @@ def pil_check(filename):
 
 
 def magick_check(filename, flip=True):
+    if ImageW is None:
+        return
     # very useful for xcf, psd and aslo supports pdf
     img = ImageW(filename=filename)
     if flip:
@@ -172,6 +185,8 @@ def magick_check(filename, flip=True):
 
 
 def magick_identify_check(filename):
+    if ImageW is None:
+        return
     proc = Popen(['identify', '-regard-warnings', filename], stdout=PIPE,
                  stderr=PIPE)  # '-verbose',
     out, err = proc.communicate()
@@ -365,6 +380,8 @@ def main():
     CONFIG = arg_parser()
     setup(CONFIG)
     check_path = CONFIG.checkpath
+    if CONFIG.excluded_folders:
+        CONFIG.excluded_folders = [os.path.normpath(f) for f in CONFIG.excluded_folders]
 
     print("Files integrity check for:", check_path)
 
@@ -393,7 +410,10 @@ def main():
     pre_count = 0
 
     for root, sub_dirs, files in os.walk(check_path):
-        
+        if CONFIG.excluded_folders:
+            # remove the excluded folders from the sub_dirs
+            sub_dirs[:] = [d for d in sub_dirs if os.path.join(root, d) not in CONFIG.excluded_folders]
+
         media_files = []
         for filename in files:
             if is_target_file(filename):
@@ -433,7 +453,7 @@ def main():
             # visualization logs and stats
             timed_logger.print_log(count, count_bad, total_file_size)
     except Empty as e:
-        print("Waiting other results for too much time, perhaps you have to raise the timeout", e.message)
+        print("Waiting other results for too much time, perhaps you have to raise the timeout", str(e))
     print("\n**Task completed**\n")
     timed_logger.print_log(count, count_bad, total_file_size, force=True)
 
