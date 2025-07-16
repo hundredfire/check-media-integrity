@@ -116,6 +116,18 @@ class TestFolderExclusion(unittest.TestCase):
         self.assertIn('Number of bad/processed files: 0 / 5', mock_stdout.getvalue())
 
     @patch('sys.stdout', new_callable=StringIO)
+    def test_exclude_substring_folder(self, mock_stdout):
+        folder_to_exclude = os.path.join(self.test_dir, 'folder1')
+        folder_not_to_exclude = os.path.join(self.test_dir, 'folder11')
+        os.makedirs(folder_not_to_exclude, exist_ok=True)
+        with open(os.path.join(folder_not_to_exclude, 'file6.txt'), 'w') as f:
+            f.write('file6')
+
+        sys.argv = ['check_mi.py', self.test_dir, '-r', '-xf', folder_to_exclude]
+        main()
+        self.assertIn('Number of bad/processed files: 0 / 4', mock_stdout.getvalue())
+
+    @patch('sys.stdout', new_callable=StringIO)
     def test_exclude_subfolder_with_hash(self, mock_stdout):
         folder_with_hash = os.path.join(self.test_dir, 'folder1', '#snapshots')
         os.makedirs(folder_with_hash, exist_ok=True)
